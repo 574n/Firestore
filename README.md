@@ -1,6 +1,6 @@
 # Firestore Codelab
 
-Following the steps of [this codelab](https://codelabs.developers.google.com/codelabs/firestore-android/index.html) to get a sense of the new Cloud Firestore product in Firebase.
+Following the steps of [this codelab](https://codelabs.developers.google.com/codelabs/firestore-android/index.html) to get a sense of the new Cloud Firestore product in Firebase. You can see final example code [here](https://github.com/firebase/quickstart-android/tree/master/firestore/app/src/main/java/com/google/firebase/example/fireeats)
 
 ## Codelab Walkthrough
 
@@ -51,7 +51,7 @@ service cloud.firestore {
 ```
 10. Now rebuild and run the app. Enter your email - it should allow you to sign up or sign in according to whether you previously had an account set up or not.
 
-11. Now write data to Firestore. We have two models (Restaurant and Rating) defined in our src/model directory. We can enter data for these directly into console or programmatically via app.
+11. [STEP 3] Now write data to Firestore. We have two models (Restaurant and Rating) defined in our src/model directory. We can enter data for these directly into console or programmatically via app.
     * Restaurant and Rating are both "Collections" of data because they are containers for several instances (records) of those types.
     * Each instance (record) is called a "Document". Collections are made up of Documents.
     * A Document can itself contain a reference to another Collection - in this context, that is called a "sub-collection". Note that this is a reference and not a copy - so retrieving Document data does not automatically pull in documents from referenced collections.
@@ -84,7 +84,22 @@ service cloud.firestore {
  * add() adds document to Collection with default unique id 
  * Documents can be created using POJOs. In this example, the RestaurantUtil literally creates Restaurant POJOs randomly from fake data, and adds them.
 
-15. 
+15. [STEP 4] RETRIEVE & DISPLAY DATA FROM FIRESTORE. The first step is to create a Query instance. Here "orderBy" sorts the returned results using the specified attribute, in the specified direction. The "limit" argument specifies how many results I want returned from the matching result set e.g., for efficiency.
+```
+    private void initFirestore() {
+        mFirestore = FirebaseFirestore.getInstance();
+
+        // Get the 50 highest rated restaurants
+        mQuery = mFirestore.collection("restaurants")
+                .orderBy("avgRating", Query.Direction.DESCENDING)
+                .limit(LIMIT);
+    }
+```
+
+16. We want to bind query results to a RecyclerView so let's set up an Adapter. And have it implement an EventListener that gets called back when there are new "QuerySnapshot" events. These can be of type ADDED (new results added), MODIFIED (existing results changed) and REMOVED (results removed). We handle them with the appropriate onDocumentAdded, onDocumentModified and onDocumentRemoved. Now simply register this listener when you make a Query; that way if the query results (QuerySnapshot) changes over time, you get notified in real time and can adapt your client side UI/UX accordingly. If you do NOT want real-time sync (i.e., no continuous updates, just a 1-time get), just use mQuery.get() instead of mQuery.addSnapshotListener(..)
+See code [here](https://github.com/firebase/quickstart-android/blob/master/firestore/app/src/main/java/com/google/firebase/example/fireeats/adapter/FirestoreAdapter.java)
+
+17. 
 
 
 
