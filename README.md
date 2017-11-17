@@ -51,7 +51,40 @@ service cloud.firestore {
 ```
 10. Now rebuild and run the app. Enter your email - it should allow you to sign up or sign in according to whether you previously had an account set up or not.
 
-11. Now write data to Firestore.
+11. Now write data to Firestore. We have two models (Restaurant and Rating) defined in our src/model directory. We can enter data for these directly into console or programmatically via app.
+    * Restaurant and Rating are both "Collections" of data because they are containers for several instances (records) of those types.
+    * Each instance (record) is called a "Document". Collections are made up of Documents.
+    * A Document can itself contain a reference to another Collection - in this context, that is called a "sub-collection". Note that this is a reference and not a copy - so retrieving Document data does not automatically pull in documents from referenced collections.
+    * Here "Restaurants" is a Collection or Restaurant documents. A Restaurant document has a reference to a "Ratings" Collection that stores ratings provided by users for that restaurant.
+
+12. MainActivity - initFirestore to get an instance of the Firestore service.
+```
+    private void initFirestore() {
+        mFirestore = FirebaseFirestore.getInstance();
+    }
+```
+
+13. Then fill in the helper method to populate data in Firestore (make sure the appropriate imports are resolved) - and removed the placeholder "toast" method invocation. Build and verify by clicking the "Add Random Items" menu option - then check that database adds new items on backend. Each click will add another X random items so watch out. This ends STEP 3.
+```
+ private void onAddItemsClicked() {
+        // Get a reference to the restaurants collection
+        CollectionReference restaurants = mFirestore.collection("restaurants");
+
+        for (int i = 0; i < 10; i++) {
+            // Get a random Restaurant POJO
+            Restaurant restaurant = RestaurantUtil.getRandom(this);
+
+            // Add a new document to the restaurants collection
+            restaurants.add(restaurant);
+        }
+    }
+```
+14. Notes from STEP 3: 
+ * Collections are created implicitly when a document is added
+ * add() adds document to Collection with default unique id 
+ * Documents can be created using POJOs. In this example, the RestaurantUtil literally creates Restaurant POJOs randomly from fake data, and adds them.
+
+15. 
 
 
 
