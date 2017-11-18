@@ -225,7 +225,15 @@ service cloud.firestore {
 }
 ```
 
-22. [STEP 8] DONE.
+22. [STEP 8] DONE. Recap:
+ * Data Model: Documents & Collections
+ * Operations: Reading, Writing & Deleting Data
+ * Real-Time Sync: Listening for ADDED, MODIFIED, REMOVED events
+ * Sorting & Filtering: WHERE, SORTBY & LIMIT capability
+ * Indexes: 1-click composite index creation (from error)
+ * Subcollections: Nested under document, access rules follow suit
+ * Transactions: Allow multiple collections to be updated in sync
+ * Security: Granular access to collections, docs, subcollections
 
 
 
