@@ -194,7 +194,38 @@ CollectionReference subRef = mFirestore.collection("restaurants")
     }
 ```
 
-21. 
+21. [STEP 7] SECURE YOUR DATA. Default rules allow public read/write acccess. We changed them to require authentication - but now we can do more granular changes at level of collections, individual documents of collections, or subcollections. Note the nesting of the "match" constraints. This is typically done on the dashboard - but you can also potentially create a local file that gets deployed to the database (as rules) using Firebase CLI. Changes can take 5-10 mins to propagate.
+```
+service cloud.firestore {
+  match /databases/{database}/documents {
+        // Restaurants:
+        //   - Authenticated user can read
+        //   - Authenticated user can create/update (for demo)
+        //   - Validate updates
+        //   - Deletes are not allowed
+    match /restaurants/{restaurantId} {
+      allow read, create: if request.auth.uid != null;
+      allow update: if request.auth.uid != null
+                    && request.resource.data.name == resource.data.name
+      allow delete: if false;
+      
+      // Ratings:
+      //   - Authenticated user can read
+      //   - Authenticated user can create if userId matches
+      //   - Deletes and updates are not allowed
+      match /ratings/{ratingId} {
+        allow read: if request.auth.uid != null;
+        allow create: if request.auth.uid != null
+                      && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if false;
+        
+        }
+    }
+  }
+}
+```
+
+22. [STEP 8] DONE.
 
 
 
