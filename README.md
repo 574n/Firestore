@@ -99,7 +99,102 @@ service cloud.firestore {
 16. We want to bind query results to a RecyclerView so let's set up an Adapter. And have it implement an EventListener that gets called back when there are new "QuerySnapshot" events. These can be of type ADDED (new results added), MODIFIED (existing results changed) and REMOVED (results removed). We handle them with the appropriate onDocumentAdded, onDocumentModified and onDocumentRemoved. Now simply register this listener when you make a Query; that way if the query results (QuerySnapshot) changes over time, you get notified in real time and can adapt your client side UI/UX accordingly. If you do NOT want real-time sync (i.e., no continuous updates, just a 1-time get), just use mQuery.get() instead of mQuery.addSnapshotListener(..)
 See code [here](https://github.com/firebase/quickstart-android/blob/master/firestore/app/src/main/java/com/google/firebase/example/fireeats/adapter/FirestoreAdapter.java)
 
-17. 
+17. [STEP 5] SORT & FILTER DATA. The "Filters" object simply contains the criteria set by the Filters in your app. Formulate the query on the right collection. Then set the WHERE filters (e.g., for equality to get matching items). Then set the SORT conditions (e.g., direction of increasing/decreasing). Finally set the LIMIT (how many results). Now use this new query object to UPDATE your pre-existing QUERY and ADAPTER instances on client. This automagically triggers subscription updates to server to match new criteria.
+```  
+    @Override
+    public void onFilter(Filters filters) {
+        // Construct query basic query
+        Query query = mFirestore.collection("restaurants");
+
+        // Category (equality filter)
+        if (filters.hasCategory()) {
+            query = query.whereEqualTo("category", filters.getCategory());
+        }
+
+        // City (equality filter)
+        if (filters.hasCity()) {
+            query = query.whereEqualTo("city", filters.getCity());
+        }
+
+        // Price (equality filter)
+        if (filters.hasPrice()) {
+            query = query.whereEqualTo("price", filters.getPrice());
+        }
+
+        // Sort by (orderBy with direction)
+        if (filters.hasSortBy()) {
+            query = query.orderBy(filters.getSortBy(), filters.getSortDirection());
+        }
+
+        // Limit items
+        query = query.limit(LIMIT);
+
+        // Update the query
+        mQuery = query;
+        mAdapter.setQuery(query);
+
+        // Set header
+        mCurrentSearchView.setText(Html.fromHtml(filters.getSearchDescription(this)));
+        mCurrentSortByView.setText(filters.getOrderDescription(this));
+
+        // Save filters
+        mViewModel.setFilters(filters);
+    }
+```
+
+18. (Composite Index) The changes will fail because your query is using multiple fields. The error message provides a link to support fixing this by creating the appropriate index in 1 click. This takes a few minutes - and then the query should succeed.
+```
+Caused by: io.grpc.zzcv: FAILED_PRECONDITION: The query requires an index. You can create it here: https://console.firebase.google.com/project/data-on-fire/database/firestore/indexes?create_index=..(Unknown Source)
+```
+
+19. [STEP 6] ORGANIZE DATA IN SUBCOLLECTIONS. Create a Ratings subcollection under Restaurants. Helps organize data without getting bloated. Simply call the .collection() method on a document within an existing collection e.g.,
+```
+CollectionReference subRef = mFirestore.collection("restaurants")
+        .document("abc123")
+        .collection("ratings");
+```
+
+20. HANDLING TRANSACTIONS. Adding subcollections may require that an update to the server actually update multiple collections at once (e.g., Now adding Rating requires updating the Ratings collection, and the avg. rating for the parent Restaurant document it belongs to). Do this by using Transactions. Create a Task to run the Transaction - then create a Transaction that sets the new Rating on its ref, sets the new Avg Rating on restaurant ref, then commits both before returning. The "Task" containing the transaction can have listeners added to it - which can notify you when transaction completes (with any relevant result returned).
+```
+    private Task<Void> addRating(final DocumentReference restaurantRef, 
+                                 final Rating rating) {
+        // Create reference for new rating, for use inside the transaction
+        final DocumentReference ratingRef = restaurantRef.collection("ratings")
+                .document();
+
+        // In a transaction, add the new rating and update the aggregate totals
+        return mFirestore.runTransaction(new Transaction.Function<Void>() {
+            @Override
+            public Void apply(Transaction transaction) 
+                    throws FirebaseFirestoreException {
+
+                Restaurant restaurant = transaction.get(restaurantRef)
+                        .toObject(Restaurant.class);
+
+                // Compute new number of ratings
+                int newNumRatings = restaurant.getNumRatings() + 1;
+
+                // Compute new average rating
+                double oldRatingTotal = restaurant.getAvgRating() * 
+                        restaurant.getNumRatings();
+                double newAvgRating = (oldRatingTotal + rating.getRating()) /
+                        newNumRatings;
+
+                // Set new restaurant info
+                restaurant.setNumRatings(newNumRatings);
+                restaurant.setAvgRating(newAvgRating);
+
+                // Commit to Firestore
+                transaction.set(restaurantRef, restaurant);
+                transaction.set(ratingRef, rating);
+
+                return null;
+            }
+        });
+    }
+```
+
+21. 
 
 
 
